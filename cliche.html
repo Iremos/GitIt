@@ -1,0 +1,742 @@
+<!DOCTYPE html>
+<html lang="ko" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>웹소설 입문 가이드 - 클리셰 & AI기획</title>
+    
+    <!-- Spoqa Han Sans Neo 폰트 연동 -->
+    <link href="https://spoqa.github.io/spoqa-han-sans/css/SpoqaHanSansNeo.css" rel="stylesheet" type="text/css">
+    <!-- FontAwesome 아이콘 CDN -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    
+    <!-- Tailwind CSS CDN 연동 및 커스텀 테마 구성 (이전 가이드 페이지와 완벽 일치) -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#002c5f', // 클래식 딥 블루
+                        cream: '#f6f3f2',    // 포근한 베이지 미색
+                        gold: '#c5a368',     // 고풍스러운 골드
+                        dark: '#1a2a3a',     // 딥 그레이/블루 텍스트
+                        light: '#556677'     // 은은한 보조 텍스트
+                    },
+                    fontFamily: {
+                        spoqa: ['"Spoqa Han Sans Neo"', '"Spoqa Han Sans"', 'sans-serif']
+                    },
+                    boxShadow: {
+                        antique: '15px 15px 0px rgba(0, 44, 95, 0.08)',
+                        antiqueLight: '10px 10px 0px rgba(0, 44, 95, 0.05)',
+                        antiqueGold: '4px 4px 0px #c5a368',
+                        antiqueGoldHover: '6px 6px 0px #c5a368',
+                        antiqueGoldActive: '2px 2px 0px #c5a368'
+                    },
+                    screens: {
+                        'xs': '400px'
+                    }
+                }
+            }
+        }
+    </script>
+    
+    <style>
+        /* 기본 커서 원복 및 인터랙티브 요소 포인터화 */
+        body, a, button, input, select, textarea {
+            cursor: auto;
+        }
+        a, button, .keyword-btn {
+            cursor: pointer;
+        }
+        
+        /* 다크모드 전환 부드러운 배경 트랜지션 */
+        body {
+            transition: background-color 0.4s ease, border-color 0.4s ease;
+        }
+
+        /* 북 플립 스피너 애니메이션 */
+        @keyframes bookFlip {
+            0%, 100% { transform: rotate(0deg); }
+            50% { transform: rotate(-5deg); }
+        }
+        @keyframes pageFlip {
+            0%, 100% { transform: scaleX(1); }
+            50% { transform: scaleX(0); }
+        }
+        .animate-book-loader {
+            animation: bookFlip 1.5s infinite ease-in-out;
+        }
+        .animate-page-loader::after {
+            content: '';
+            position: absolute;
+            width: 50%;
+            height: 100%;
+            background-color: #002c5f;
+            right: 0;
+            top: 0;
+            transform-origin: left center;
+            animation: pageFlip 1.5s infinite ease-in-out;
+        }
+
+        /* 앤티크 양장 책 오버레이 리얼 질감 그림자 */
+        .book-spine-glow {
+            background: linear-gradient(to right, rgba(0,0,0,0.12) 0%, rgba(0,0,0,0.02) 6%, rgba(0,0,0,0) 12%, rgba(0,0,0,0) 88%, rgba(0,0,0,0.15) 100%);
+        }
+    </style>
+</head>
+<body data-page="cliche" class="font-spoqa bg-cream dark:bg-[#121212] text-dark dark:text-[#eaeaea] min-h-screen relative border-[6px] md:border-[12px] border-primary dark:border-[#1a1a1a] pt-[72px] sm:pt-[82px] overflow-x-hidden">
+
+    <!-- 잉크 궤적을 렌더링하기 위한 스크린 오버레이 캔버스 -->
+    <canvas id="ink-canvas" class="fixed inset-0 pointer-events-none z-[99998]"></canvas>
+
+    <!-- 양장본 종이 외곽 데코 프레임 -->
+    <div class="fixed top-6 left-6 right-6 bottom-6 border border-dashed border-primary/20 dark:border-gold/20 pointer-events-none z-40 hidden md:block"></div>
+
+    <!-- 상단 스티키 네비게이션 바 (MPA 완전 일치형 구현) -->
+    <nav class="fixed top-0 left-0 right-0 h-[72px] sm:h-[82px] bg-cream dark:bg-[#151515] border-b-2 border-primary dark:border-gold/30 flex items-center z-50 transition-colors duration-300">
+        <!-- 바디 보더 및 상부 여백에 대응하여 내비게이션 바 내부를 불투명 크림베이지로 마스킹 -->
+        <div class="absolute inset-x-0 top-0 h-[6px] md:h-[12px] bg-primary dark:bg-[#1a1a1a]"></div>
+        
+        <div class="w-full max-w-[1100px] mx-auto px-3 sm:px-[30px] mt-[6px] md:mt-[12px] flex justify-between items-center">
+            <a href="intro.html" class="text-sm sm:text-base md:text-xl font-bold text-primary dark:text-gold flex items-center gap-1 sm:gap-2 tracking-tight shrink-0">
+                📚 <span data-i18n="nav_logo">입문 도서관</span>
+            </a>
+            
+            <div class="flex items-center gap-2 sm:gap-6">
+                <!-- 가상 페이지 라우팅 전용 탭 메뉴 -->
+                <ul class="flex gap-1.5 sm:gap-4 md:gap-6 list-none items-center">
+                    <li>
+                        <a href="intro.html" data-page="intro" class="nav-link relative py-1 px-1 sm:px-1.5 text-[0.75rem] sm:text-xs md:text-[0.95rem] font-medium transition-all duration-300 text-primary dark:text-[#bbb] hover:text-dark dark:hover:text-gold whitespace-nowrap">
+                            <span data-i18n="nav_home_short" class="md:hidden">홈</span>
+                            <span data-i18n="nav_home" class="hidden md:inline">홈 & 입문이유</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="genre.html" data-page="genre" class="nav-link relative py-1 px-1 sm:px-1.5 text-[0.75rem] sm:text-xs md:text-[0.95rem] font-medium transition-all duration-300 text-primary dark:text-[#bbb] hover:text-dark dark:hover:text-gold whitespace-nowrap">
+                            <span data-i18n="nav_genres_short" class="md:hidden">장르</span>
+                            <span data-i18n="nav_genres" class="hidden md:inline">장르 & 명작선</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="cliche.html" data-page="cliche" class="nav-link relative py-1 px-1 sm:px-1.5 text-[0.75rem] sm:text-xs md:text-[0.95rem] font-medium transition-all duration-300 text-primary dark:text-[#bbb] hover:text-dark dark:hover:text-gold whitespace-nowrap">
+                            <span data-i18n="nav_tropes_short" class="md:hidden">기획</span>
+                            <span data-i18n="nav_tropes" class="hidden md:inline">클리셰 & AI기획</span>
+                        </a>
+                    </li>
+                </ul>
+                
+                <div class="flex items-center gap-1 sm:gap-2 md:gap-3 shrink-0">
+                    <!-- 다국어 번역 전환 컨트롤 토글 -->
+                    <button id="lang-toggle" class="px-1.5 py-0.5 sm:px-2.5 sm:py-1 text-[9px] sm:text-xs font-bold border border-primary/20 dark:border-gold/30 text-primary dark:text-gold rounded hover:bg-primary/5 dark:hover:bg-gold/5 transition-all duration-300">
+                        ENG
+                    </button>
+
+                    <!-- 테마 변환 다크/라이트 모드 토글 스위치 -->
+                    <button id="theme-toggle" class="w-7 h-7 sm:w-10 sm:h-10 rounded-full flex items-center justify-center border border-primary/20 dark:border-gold/30 text-primary dark:text-gold hover:bg-primary/5 dark:hover:bg-gold/5 transition-all duration-300" aria-label="테마 전환">
+                        <i class="fa-solid fa-moon dark:hidden text-[11px] sm:text-base"></i>
+                        <i class="fa-solid fa-sun hidden dark:inline-block text-[11px] sm:text-base"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- ================= STREAMING_CHUNK: 클리셰 해부 그리드 작성 ================= -->
+    <div id="view-tropes" class="page-view">
+        <section class="py-16 md:py-[100px] bg-cream dark:bg-[#121212] transition-colors duration-300">
+            <div class="w-full max-w-[1100px] mx-auto px-4 sm:px-[30px]">
+                <div class="text-center mb-12 md:mb-[70px]">
+                    <h2 class="text-2xl sm:text-3xl md:text-4xl font-bold text-primary dark:text-gold tracking-tight mb-[10px] md:mb-[15px] relative pb-3 inline-block">
+                        <span data-i18n="tropes_title">단골 흥행 법칙: 회·빙·환</span>
+                        <span class="absolute bottom-0 left-1/2 -translate-x-1/2 w-20 h-0.5 bg-primary dark:bg-gold"></span>
+                    </h2>
+                    <p class="text-sm sm:text-base md:text-[1.1rem] text-light dark:text-[#999] font-light tracking-tight" data-i18n="tropes_subtitle">웹소설의 뼈대를 만드는 3대 클리셰와 각 분류에 매칭되는 명작 미니북</p>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6 md:gap-[30px]">
+                    <!-- 회귀 -->
+                    <div class="border border-primary dark:border-gold/30 bg-white dark:bg-[#1a1a1a] p-6 md:p-[35px_30px] flex flex-col justify-between min-h-[250px] md:min-h-[300px] relative rounded">
+                        <div class="absolute inset-1.5 border border-primary/5 dark:border-gold/5 pointer-events-none rounded"></div>
+                        <div class="mb-4 md:mb-6">
+                            <span class="inline-block text-[0.7rem] md:text-[0.8rem] font-bold bg-primary dark:bg-gold text-white dark:text-[#1a1a1a] p-[3px_8px] md:p-[4px_10px] mb-[10px] md:mb-[15px] tracking-[0.1em]" data-i18n="trope1_tag">회귀물</span>
+                            <h3 class="text-xl md:text-2xl font-bold text-primary dark:text-gold mb-2 md:mb-3 tracking-tight" data-i18n="trope1_name">회귀 (Regression)</h3>
+                            <p class="text-xs sm:text-sm md:text-[0.92rem] text-light dark:text-[#bbb] leading-relaxed" data-i18n="trope1_desc">주인공이 미래의 참혹한 결말을 겪은 뒤, 인생의 특정 시점으로 정신만 되돌아가 아는 미래를 바탕으로 압도적인 선점을 취하는 기법.</p>
+                        </div>
+                        <div class="border-t border-dashed border-primary/20 dark:border-gold/20 pt-4 md:pt-5 flex items-center justify-between gap-3">
+                            <span class="text-xs font-bold text-primary dark:text-gold" data-i18n="trope_match">매칭 도서:</span>
+                            <div class="flex gap-2">
+                                <div class="mini-book w-[40px] h-[58px] md:w-[45px] md:h-[64px] rounded border border-primary/30 flex items-center justify-center bg-cream text-primary text-[0.55rem] md:text-[0.6rem] font-bold" title="철수를 구하시오">REG</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 빙의 -->
+                    <div class="border border-primary dark:border-gold/30 bg-white dark:bg-[#1a1a1a] p-6 md:p-[35px_30px] flex flex-col justify-between min-h-[250px] md:min-h-[300px] relative rounded">
+                        <div class="absolute inset-1.5 border border-primary/5 dark:border-gold/5 pointer-events-none rounded"></div>
+                        <div class="mb-4 md:mb-6">
+                            <span class="inline-block text-[0.7rem] md:text-[0.8rem] font-bold bg-primary dark:bg-gold text-white dark:text-[#1a1a1a] p-[3px_8px] md:p-[4px_10px] mb-[10px] md:mb-[15px] tracking-[0.1em]" data-i18n="trope2_tag">빙의물</span>
+                            <h3 class="text-xl md:text-2xl font-bold text-primary dark:text-gold mb-2 md:mb-3 tracking-tight" data-i18n="trope2_name">빙의 (Possession)</h3>
+                            <p class="text-xs sm:text-sm md:text-[0.92rem] text-light dark:text-[#bbb] leading-relaxed" data-i18n="trope2_desc">자신이 즐겨 읽던 소설, 게임의 보조 캐릭터나 엑스트라의 몸에 영혼이 흡수되어, 아는 설정 정보로 시스템을 지배해 나가는 흥미로운 클리셰.</p>
+                        </div>
+                        <div class="border-t border-dashed border-primary/20 dark:border-gold/20 pt-4 md:pt-5 flex items-center justify-between gap-3">
+                            <span class="text-xs font-bold text-primary dark:text-gold" data-i18n="trope_match">매칭 도서:</span>
+                            <div class="flex gap-2">
+                                <div class="mini-book w-[40px] h-[58px] md:w-[45px] md:h-[64px] rounded border border-primary/30 flex items-center justify-center bg-cream text-primary text-[0.55rem] md:text-[0.6rem] font-bold" title="임기 첫날에 게이트가 열렸다">POS</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 환생 -->
+                    <div class="border border-primary dark:border-gold/30 bg-white dark:bg-[#1a1a1a] p-6 md:p-[35px_30px] flex flex-col justify-between min-h-[250px] md:min-h-[300px] relative rounded">
+                        <div class="absolute inset-1.5 border border-primary/5 dark:border-gold/5 pointer-events-none rounded"></div>
+                        <div class="mb-4 md:mb-6">
+                            <span class="inline-block text-[0.7rem] md:text-[0.8rem] font-bold bg-primary dark:bg-gold text-white dark:text-[#1a1a1a] p-[3px_8px] md:p-[4px_10px] mb-[10px] md:mb-[15px] tracking-[0.1em]" data-i18n="trope3_tag">환생물</span>
+                            <h3 class="text-xl md:text-2xl font-bold text-primary dark:text-gold mb-2 md:mb-3 tracking-tight" data-i18n="trope3_name">환생 (Reincarnation)</h3>
+                            <p class="text-xs sm:text-sm md:text-[0.92rem] text-light dark:text-[#bbb] leading-relaxed" data-i18n="trope3_desc">이전 생에서 비극적으로 숨을 거둔 강자 또는 현대인이 기억을 고스란히 안고 완전히 새로운 세대나 전혀 다른 가문의 아기로 다시 태어나는 서사.</p>
+                        </div>
+                        <div class="border-t border-dashed border-primary/20 dark:border-gold/20 pt-4 md:pt-5 flex items-center justify-between gap-3">
+                            <span class="text-xs font-bold text-primary dark:text-gold" data-i18n="trope_match">매칭 도서:</span>
+                            <div class="flex gap-2">
+                                <div class="mini-book w-[40px] h-[58px] md:w-[45px] md:h-[64px] rounded border border-primary/30 flex items-center justify-center bg-cream text-primary text-[0.55rem] md:text-[0.6rem] font-bold" title="21세기 반로환동전">REI</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ================= STREAMING_CHUNK: AI 타이틀 제너레이터 작성 ================= -->
+        <section class="bg-white dark:bg-[#151515] py-16 md:py-[100px] border-t border-primary dark:border-gold/20 transition-colors duration-300" id="ai-generator">
+            <div class="w-full max-w-[1100px] mx-auto px-4 sm:px-[30px]">
+                <div class="text-center mb-12 md:mb-[70px]">
+                    <h2 class="text-2xl sm:text-3xl md:text-4xl font-bold text-primary dark:text-gold tracking-tight mb-[10px] md:mb-[15px] relative pb-3 inline-block">
+                        <span data-i18n="ai_title">AI 웹소설 타이틀 메이커</span>
+                        <span class="absolute bottom-0 left-1/2 -translate-x-1/2 w-20 h-0.5 bg-primary dark:bg-gold"></span>
+                    </h2>
+                    <p class="text-sm sm:text-base md:text-[1.1rem] text-light dark:text-[#999] font-light tracking-tight" data-i18n="ai_subtitle">당신의 간단한 아이디어와 검증된 흥행 키워드를 융합하여 매력적인 타이틀 기획안을 도출해 냅니다.</p>
+                </div>
+
+                <div class="border-2 border-primary dark:border-gold/40 bg-cream dark:bg-[#1a1a1a] p-5 sm:p-8 md:p-[50px_40px] rounded relative shadow-antiqueLight transition-all duration-300">
+                    <div class="absolute inset-2 border border-dashed border-primary/20 dark:border-gold/20 pointer-events-none rounded"></div>
+
+                    <div class="flex flex-col gap-6 md:gap-[30px] mb-8 md:mb-10 relative z-10">
+                        <!-- 관심 분야 입력 -->
+                        <div class="flex flex-col gap-2">
+                            <label class="font-bold text-primary dark:text-gold text-sm sm:text-[1rem] flex items-center gap-2" for="user-core-idea" data-i18n="ai_label_idea">나만의 특별한 핵심 소재/관심사</label>
+                            <input type="text" id="user-core-idea" class="w-full p-3 sm:p-[14px_18px] border border-primary dark:border-gold bg-white dark:bg-[#252525] text-xs sm:text-[0.95rem] rounded text-dark dark:text-white transition-all duration-300 focus:outline-none focus:shadow-[0_0_0_3px_rgba(0,44,95,0.15)] dark:focus:shadow-[0_0_0_3px_rgba(197,163,104,0.15)]" data-i18n-placeholder="ai_placeholder_idea" placeholder="예: 삼국지 제갈량, 로스쿨 의사, 게임 개발자, 고양이 집사">
+                        </div>
+                        
+                        <!-- 트렌드 작법 키워드 다중선택 영역 -->
+                        <div class="flex flex-col gap-2">
+                            <label class="font-bold text-primary dark:text-gold text-sm sm:text-[1rem] flex items-center gap-2">
+                                <span data-i18n="ai_label_keywords">웹소설 흥행 키워드 (최대 2개 선택)</span>
+                            </label>
+                            <div class="flex flex-wrap gap-2 mt-1" id="keyword-pool">
+                                <button type="button" class="keyword-btn bg-white dark:bg-[#252525] border border-primary dark:border-gold/40 text-primary dark:text-gold p-2 sm:p-[10px_20px] rounded font-medium text-xs sm:text-[0.9rem] cursor-pointer transition-all duration-300 hover:bg-primary/5 dark:hover:bg-gold/5" data-val="회귀">#회귀</button>
+                                <button type="button" class="keyword-btn bg-white dark:bg-[#252525] border border-primary dark:border-gold/40 text-primary dark:text-gold p-2 sm:p-[10px_20px] rounded font-medium text-xs sm:text-[0.9rem] cursor-pointer transition-all duration-300 hover:bg-primary/5 dark:hover:bg-gold/5" data-val="빙의">#빙의</button>
+                                <button type="button" class="keyword-btn bg-white dark:bg-[#252525] border border-primary dark:border-gold/40 text-primary dark:text-gold p-2 sm:p-[10px_20px] rounded font-medium text-xs sm:text-[0.9rem] cursor-pointer transition-all duration-300 hover:bg-primary/5 dark:hover:bg-gold/5" data-val="환생">#환생</button>
+                                <button type="button" class="keyword-btn bg-white dark:bg-[#252525] border border-primary dark:border-gold/40 text-primary dark:text-gold p-2 sm:p-[10px_20px] rounded font-medium text-xs sm:text-[0.9rem] cursor-pointer transition-all duration-300 hover:bg-primary/5 dark:hover:bg-gold/5" data-val="망나니">#망나니</button>
+                                <button type="button" class="keyword-btn bg-white dark:bg-[#252525] border border-primary dark:border-gold/40 text-primary dark:text-gold p-2 sm:p-[10px_20px] rounded font-medium text-xs sm:text-[0.9rem] cursor-pointer transition-all duration-300 hover:bg-primary/5 dark:hover:bg-gold/5" data-val="아카데미">#아카데미</button>
+                                <button type="button" class="keyword-btn bg-white dark:bg-[#252525] border border-primary dark:border-gold/40 text-primary dark:text-gold p-2 sm:p-[10px_20px] rounded font-medium text-xs sm:text-[0.9rem] cursor-pointer transition-all duration-300 hover:bg-primary/5 dark:hover:bg-gold/5" data-val="천재">#천재</button>
+                            </div>
+                        </div>
+
+                        <div class="text-center mt-2.5">
+                            <button type="button" id="ai-submit-btn" class="bg-primary dark:bg-[#1a1a1a] text-white dark:text-gold font-bold text-sm sm:text-[1.1rem] p-3 sm:p-[15px_40px] border dark:border-gold/40 rounded cursor-pointer transition-all duration-300 shadow-antiqueGold dark:shadow-none hover:bg-[#001f44] dark:hover:bg-[#252525] hover:-translate-y-0.5 active:translate-y-0.5 w-full sm:w-auto" data-i18n="ai_submit_btn">✨ 나만의 가상 명작 타이틀 생성하기</button>
+                        </div>
+                    </div>
+
+                    <div class="hidden flex-col items-center justify-center py-8 gap-4 animate-[fadeIn_0.5s_ease-out]" id="ai-loading">
+                        <div class="book-loader w-[40px] h-[30px] md:w-[50px] md:h-[38px] relative border-2 border-primary dark:border-gold rounded animate-book-loader animate-page-loader"></div>
+                        <p class="text-xs sm:text-sm text-primary dark:text-gold font-medium" data-i18n="ai_loading_text">AI 타이틀 메이커가 흥행 키워드를 조합하고 있습니다...</p>
+                    </div>
+
+                    <!-- 에러 영역 -->
+                    <div class="text-[#d32f2f] bg-[#ffebee] border border-[#ffcdd2] p-[12px] rounded mt-4 hidden text-xs sm:text-[0.95rem] text-center" id="ai-error"></div>
+
+                    <!-- 👑 고풍스러운 장식의 결과 표시 상자 -->
+                    <div class="mt-8 md:mt-[50px] bg-white dark:bg-[#222222] border-[3px] md:border-[4px] border-double border-gold p-6 sm:p-10 md:p-[45px_40px] rounded-lg relative hidden shadow-[0_15px_35px_rgba(0,0,0,0.08)]" id="ai-result">
+                        <!-- 네 귀퉁이 고풍 아웃라인 프레임 데코 -->
+                        <div class="antique-corner corner-tl absolute top-2 left-2 md:top-3.5 md:left-3.5 border-t-2 border-l-2 border-gold w-4 h-4 md:w-6 md:h-6"></div>
+                        <div class="antique-corner corner-tr absolute top-2 right-2 md:top-3.5 md:right-3.5 border-t-2 border-r-2 border-gold w-4 h-4 md:w-6 md:h-6"></div>
+                        <div class="antique-corner corner-bl absolute bottom-2 left-2 md:bottom-3.5 md:left-3.5 border-b-2 border-l-2 border-gold w-4 h-4 md:w-6 md:h-6"></div>
+                        <div class="antique-corner corner-br absolute bottom-2 right-2 md:bottom-3.5 md:right-3.5 border-b-2 border-r-2 border-gold w-4 h-4 md:w-6 md:h-6"></div>
+
+                        <div class="antique-header-decor flex items-center justify-center gap-3 md:gap-4 mb-4 md:mb-6">
+                            <div class="antique-line h-0.5 bg-gradient-to-r from-transparent via-gold to-transparent flex-grow"></div>
+                            <i class="fa-solid fa-crown text-gold text-xs sm:text-sm"></i>
+                            <div class="antique-line h-0.5 bg-gradient-to-r from-transparent via-gold to-transparent flex-grow"></div>
+                        </div>
+
+                        <div class="text-center">
+                            <span class="inline-block bg-primary dark:bg-gold text-white dark:text-[#1a1a1a] text-[10px] sm:text-[0.8rem] font-bold p-[4px_10px] sm:p-[5px_14px] mb-4 sm:mb-[25px] tracking-[0.08em] uppercase" data-i18n="ai_result_badge">AI 기획 신작 안내</span>
+                        </div>
+                        
+                        <!-- 도서 제목 및 카피 -->
+                        <h3 class="text-xl sm:text-2xl md:text-[2.3rem] font-bold text-primary dark:text-gold mb-2 md:mb-3 tracking-tight text-center" id="res-title">가제: 삼국지 속 망나니 천재 화타가 되었다</h3>
+                        <p class="text-sm sm:text-base md:text-[1.15rem] text-light dark:text-[#ccc] font-medium text-center mb-6 md:mb-[30px] italic" id="res-copy">"죽을 운명의 영웅들, 내 손으로 개조해 주마."</p>
+                        
+                        <!-- 고풍 상세 분석 그리드 -->
+                        <div class="grid grid-cols-1 gap-4 md:gap-[25px] border-t border-dashed border-gold pt-6 md:pt-[30px]">
+                            <!-- 예상 시놉시스 -->
+                            <div class="bg-cream dark:bg-[#151515] p-4 sm:p-5 md:p-[24px_28px] rounded border-l-[3px] sm:border-l-[4px] border-l-gold">
+                                <h4 class="text-sm sm:text-base md:text-[1.1rem] font-bold text-primary dark:text-gold mb-2 flex items-center gap-2">
+                                    <i class="fa-solid fa-feather text-xs sm:text-sm"></i> <span data-i18n="ai_result_synopsis_title">작품 예비 시놉시스 (Synopsis)</span>
+                                </h4>
+                                <p class="text-xs sm:text-sm md:text-[0.98rem] text-dark dark:text-[#ddd] leading-[1.8] text-justify" id="res-synopsis">
+                                    현대 최고의 외과의사가 불의의 사고를 당한 뒤, 하필 삼국지 조조의 칼날 아래 처형당할 운명인 망나니 한의사 '화타'의 몸으로 깨어난다. 의학 지식과 거친 몸을 무기삼아 시대를 쥐고 흔들기 시작한다.
+                                </p>
+                            </div>
+
+                            <!-- 흥행 분석 코멘트 -->
+                            <div class="bg-cream dark:bg-[#151515] p-4 sm:p-5 md:p-[24px_28px] rounded border-l-[3px] sm:border-l-[4px] border-l-gold">
+                                <h4 class="text-sm sm:text-base md:text-[1.1rem] font-bold text-primary dark:text-gold mb-2 flex items-center gap-2">
+                                    <i class="fa-solid fa-compass text-xs sm:text-sm"></i> <span data-i18n="ai_result_analysis_title">트렌드 흥행 요인 분석 (Analysis)</span>
+                                </h4>
+                                <p class="text-xs sm:text-sm md:text-[0.98rem] text-dark dark:text-[#ddd] leading-[1.8] text-justify" id="res-analysis">
+                                    망나니 키워드의 시원한 돌파력에 전문가적 치료물 요소를 더해 높은 사이다 지수를 이끌어 냅니다. 고전 삼국지의 장엄함 속에 유쾌한 유머코드가 돋보이는 흥행 공식을 갖추고 있습니다.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </div>
+
+    <!-- 👑 고급 북마크 알림 토스트 컨테이너 -->
+    <div class="fixed bottom-4 right-4 sm:bottom-10 sm:right-10 z-[10000] flex flex-col gap-3 pointer-events-none" id="toast-container"></div>
+
+    <footer class="bg-primary dark:bg-[#151515] text-cream dark:text-gold py-[40px] md:py-[50px] text-center text-[0.8rem] md:text-[0.9rem] border-t-[4px] border-double border-t-cream dark:border-t-gold/30 transition-colors duration-300">
+        <div class="w-full max-w-[1100px] mx-auto px-4 sm:px-[30px]">
+            <h4 class="text-[1rem] md:text-[1.1rem] font-bold tracking-[0.15em] mb-2 md:mb-[15px]">WEBNOVEL INTRO-GUIDE BOOK</h4>
+            <p class="opacity-70 leading-relaxed">&copy; 2026 웹소설 입문 가이드. All Pages of Imaginative Worlds. 모든 텍스트의 권리는 해당 작가 및 유통사에 있습니다.</p>
+        </div>
+    </footer>
+
+    <script>
+        // 한국어 / 영어 글로벌 로컬라이징 사전 (3페이지 MPA에 완벽 동기화 연동)
+        const i18n = {
+            ko: {
+                nav_logo: "입문 도서관",
+                nav_home: "홈 & 입문이유",
+                nav_home_short: "홈",
+                nav_genres: "장르 & 명작선",
+                nav_genres_short: "장르",
+                nav_tropes: "클리셰 & AI기획",
+                nav_tropes_short: "기획",
+                
+                tropes_title: "단골 흥행 법칙: 회·빙·환",
+                tropes_subtitle: "웹소설의 뼈대를 만드는 3대 클리셰와 각 분류에 매칭되는 명작 미니북",
+                trope1_tag: "회귀물",
+                trope1_name: "회귀 (Regression)",
+                trope1_desc: "주인공이 미래의 참혹한 결말을 겪은 뒤, 인생의 특정 시점으로 정신만 되돌아가 아는 미래를 바탕으로 압도적인 선점을 취하는 기법.",
+                trope2_tag: "빙의물",
+                trope2_name: "빙의 (Possession)",
+                trope2_desc: "자신이 즐겨 읽던 소설, 게임의 보조 캐릭터나 엑스트라의 몸에 영혼이 흡수되어, 아는 설정 정보로 시스템을 지배해 나가는 흥미로운 클리셰.",
+                trope3_tag: "환생물",
+                trope3_name: "환생 (Reincarnation)",
+                trope3_desc: "이전 생에서 비극적으로 숨을 거둔 강자 또는 현대인이 기억을 고스란히 안고 완전히 새로운 세대나 전혀 다른 가문의 아기로 다시 태어나는 서사.",
+                trope_match: "매칭 도서:",
+                
+                ai_title: "AI 웹소설 타이틀 메이커",
+                ai_subtitle: "당신의 간단한 아이디어와 검증된 흥행 키워드를 융합하여 매력적인 타이틀 기획안을 도출해 냅니다.",
+                ai_label_idea: "나만의 특별한 핵심 소재/관심사",
+                ai_placeholder_idea: "예: 삼국지 제갈량, 로스쿨 의사, 게임 개발자, 고양이 집사",
+                ai_label_keywords: "웹소설 흥행 키워드 (최대 2개 선택)",
+                ai_submit_btn: "✨ 나만의 가상 명작 타이틀 생성하기",
+                ai_loading_text: "AI 타이틀 메이커가 흥행 키워드를 조합하고 있습니다...",
+                ai_result_badge: "AI 기획 신작 안내",
+                ai_result_synopsis_title: "작품 예비 시놉시스 (Synopsis)",
+                ai_result_analysis_title: "트렌드 흥행 요인 분석 (Analysis)",
+
+                toast_lang_ko: "한국어 테마 도서관으로 전환되었습니다.",
+                toast_lang_en: "Language has been switched to English.",
+                toast_dark_on: "아늑한 야간 독서 분위기의 다크 테마로 전환되었습니다.",
+                toast_dark_off: "밝은 분위기의 양장 도서관 테마로 전환되었습니다.",
+                error_no_idea: "나만의 특별한 핵심 소재를 입력해 주세요!",
+                error_no_kw: "흥행 키워드를 1개 이상 활성화해야 합니다!",
+                system_instruction: "당신은 최신 트렌드를 꿰뚫고 있는 유능한 웹소설 메인 기획자입니다. 사용자가 제안한 핵심 소재와 흥행 키워드를 영리하게 결합하여 웹소설 사이트의 헤드라인에 올라갈 만한 대단히 자극적이고 트렌디한 타이틀(제목) 기획서(JSON)를 설계합니다. 반드시 정해진 JSON 형태만 출력해야 하며, 다정하면서도 자신감 있는 분석을 첨부해 주세요.",
+                prompt_lang: "한국어(Korean)"
+            },
+            en: {
+                nav_logo: "Intro Library",
+                nav_home: "Home & Why",
+                nav_home_short: "Home",
+                nav_genres: "Genres & Best",
+                nav_genres_short: "Genres",
+                nav_tropes: "Clichés & AI Maker",
+                nav_tropes_short: "Maker",
+                
+                tropes_title: "Popular Formula: R-P-R",
+                tropes_subtitle: "The three core clichés forming the backbone of webnovels, mapped to representative mini-books.",
+                trope1_tag: "Regression",
+                trope1_name: "Regression",
+                trope1_desc: "The protagonist experiences a tragic future, returns to a specific point in the past, and uses future knowledge to gain an absolute advantage.",
+                trope2_tag: "Possession",
+                trope2_name: "Possession",
+                trope2_desc: "The protagonist gets sucked into a sub-character or extra of a novel or game they knew, using settings knowledge to dominate the system.",
+                trope3_tag: "Reincarnation",
+                trope3_name: "Reincarnation",
+                trope3_desc: "The protagonist dies tragically and is reborn as a baby in a new generation or entirely different family, carrying their previous memories.",
+                trope_match: "Match Book:",
+                
+                ai_title: "AI Webnovel Title Maker",
+                ai_subtitle: "Combine your simple ideas with proven keywords to generate an attractive, market-ready title proposal.",
+                ai_label_idea: "Your Special Core Concept or Interest",
+                ai_placeholder_idea: "e.g., Three Kingdoms Zhuge Liang, Law school doctor, Game developer, Cat butler",
+                ai_label_keywords: "Webnovel Hit Keywords (Choose up to 2)",
+                ai_submit_btn: "✨ Generate My Custom Masterpiece Title",
+                ai_loading_text: "AI Title Maker is combining hit keywords...",
+                ai_result_badge: "AI Generated Proposal",
+                ai_result_synopsis_title: "Project Synopsis",
+                ai_result_analysis_title: "Trend Success Factor Analysis",
+
+                toast_lang_ko: "Switched to Korean Library theme.",
+                toast_lang_en: "Language has been switched to English.",
+                toast_dark_on: "Switched to cozy Dark theme for comfortable night reading.",
+                toast_dark_off: "Switched to bright Hardcover Library theme.",
+                error_no_idea: "Please enter your special core concept!",
+                error_no_kw: "You must activate at least 1 keyword!",
+                system_instruction: "You are a highly capable webnovel creative director. You will combine the user's core concept and keywords to design an extremely exciting and trendy fictional webnovel title proposal in JSON format. You must strictly output JSON matching the schema, and provide analysis in a warm, confident tone.",
+                prompt_lang: "English"
+            }
+        };
+    </script>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            
+            // --- 1. 테마 & 언어 메모리 로드 및 가시성 보장 ---
+            let currentLang = localStorage.getItem('lang') || 'ko';
+            const savedTheme = localStorage.getItem('theme');
+
+            // 테마 설정 복구
+            if (savedTheme === 'dark' || (!savedTheme && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+                document.documentElement.classList.add('dark');
+            } else {
+                document.documentElement.classList.remove('dark');
+            }
+
+            // 언어 렌더링 함수
+            function applyTranslations() {
+                document.querySelectorAll('[data-i18n]').forEach(el => {
+                    const key = el.getAttribute('data-i18n');
+                    if (i18n[currentLang] && i18n[currentLang][key]) {
+                        el.textContent = i18n[currentLang][key];
+                    }
+                });
+
+                document.querySelectorAll('[data-i18n-placeholder]').forEach(el => {
+                    const key = el.getAttribute('data-i18n-placeholder');
+                    if (i18n[currentLang] && i18n[currentLang][key]) {
+                        el.setAttribute('placeholder', i18n[currentLang][key]);
+                    }
+                });
+
+                // 언어 상태 표기 업데이트
+                document.getElementById('lang-toggle').textContent = currentLang === 'ko' ? 'ENG' : 'KOR';
+            }
+
+            applyTranslations();
+
+            // --- 2. 동적 네비게이션 액티브 하이라이터 (MPA용 자동 검출기) ---
+            const pageId = document.body.getAttribute('data-page'); 
+            document.querySelectorAll('.nav-link').forEach(link => {
+                const linkPage = link.getAttribute('data-page');
+                if (linkPage === pageId) {
+                    link.classList.add('text-gold', 'font-bold');
+                    link.classList.remove('text-primary', 'dark:text-[#bbb]');
+                    link.className += ' after:content-[\'\'] after:absolute after:bottom-0 after:left-0 after:w-full after:h-[2px] after:bg-gold after:transition-all after:duration-300';
+                } else {
+                    link.classList.remove('text-gold', 'font-bold');
+                    link.classList.add('text-primary', 'dark:text-[#bbb]');
+                }
+            });
+
+            // --- STREAMING_CHUNK: 토스트 팝업 모듈 구현 ---
+            // --- 3. 커스텀 북마크 디자인 토스트 시스템 ---
+            function showToast(message) {
+                const container = document.getElementById('toast-container');
+                const toast = document.createElement('div');
+                toast.className = 'bg-primary dark:bg-[#252525] text-white dark:text-gold border-2 border-gold py-2.5 px-4 sm:py-4 sm:px-7 rounded shadow-2xl flex items-center gap-2 sm:gap-3 pointer-events-auto translate-x-[120%] transition-all duration-300 max-w-[280px] sm:max-w-none';
+                toast.innerHTML = `<i class="fa-solid fa-book-bookmark text-gold text-xs sm:text-[1.1rem]"></i> <span class="font-medium text-xs sm:text-[0.95rem]">${message}</span>`;
+                
+                container.appendChild(toast);
+                
+                setTimeout(() => {
+                    toast.classList.remove('translate-x-[120%]');
+                }, 50);
+
+                setTimeout(() => {
+                    toast.classList.add('translate-x-[120%]');
+                    setTimeout(() => {
+                        toast.remove();
+                    }, 400);
+                }, 3500);
+            }
+
+            // --- 4. 라이트/다크 모드 실시간 스위치 시스템 ---
+            const themeToggleBtn = document.getElementById('theme-toggle');
+            themeToggleBtn.addEventListener('click', () => {
+                const isDark = document.documentElement.classList.contains('dark');
+                if (isDark) {
+                    document.documentElement.classList.remove('dark');
+                    localStorage.setItem('theme', 'light');
+                    showToast(i18n[currentLang].toast_dark_off);
+                } else {
+                    document.documentElement.classList.add('dark');
+                    localStorage.setItem('theme', 'dark');
+                    showToast(i18n[currentLang].toast_dark_on);
+                }
+            });
+
+            // --- 5. 다국어 로컬라이징 토글 (KOR/ENG) ---
+            const langToggleBtn = document.getElementById('lang-toggle');
+            langToggleBtn.addEventListener('click', () => {
+                if (currentLang === 'ko') {
+                    currentLang = 'en';
+                    localStorage.setItem('lang', 'en');
+                    showToast(i18n.en.toast_lang_en);
+                } else {
+                    currentLang = 'ko';
+                    localStorage.setItem('lang', 'ko');
+                    showToast(i18n.ko.toast_lang_ko);
+                }
+                applyTranslations();
+            });
+
+            // --- STREAMING_CHUNK: 키워드 풀 이벤트 연결 및 한도 제한 ---
+            // --- 6. 키워드 2개 제한 선택 제어 ---
+            const keywordPool = document.getElementById('keyword-pool');
+            const keywordBtns = keywordPool.querySelectorAll('.keyword-btn');
+            let selectedKeywords = [];
+
+            keywordBtns.forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const value = btn.getAttribute('data-val');
+
+                    if (btn.classList.contains('selected')) {
+                        btn.classList.remove('selected');
+                        btn.classList.remove('bg-primary', 'dark:bg-gold', 'text-white', 'dark:text-[#1a1a1a]', 'border-primary', 'dark:border-gold');
+                        btn.classList.add('bg-white', 'dark:bg-[#252525]', 'text-primary', 'dark:text-gold');
+                        selectedKeywords = selectedKeywords.filter(k => k !== value);
+                    } else {
+                        if (selectedKeywords.length >= 2) {
+                            const firstVal = selectedKeywords.shift();
+                            const firstBtn = keywordPool.querySelector(`.keyword-btn[data-val="${firstVal}"]`);
+                            if (firstBtn) {
+                                firstBtn.classList.remove('selected', 'bg-primary', 'dark:bg-gold', 'text-white', 'dark:text-[#1a1a1a]', 'border-primary', 'dark:border-gold');
+                                firstBtn.classList.add('bg-white', 'dark:bg-[#252525]', 'text-primary', 'dark:text-gold');
+                            }
+                        }
+                        btn.classList.add('selected', 'bg-primary', 'dark:bg-gold', 'text-white', 'dark:text-[#1a1a1a]', 'border-primary', 'dark:border-gold');
+                        btn.classList.remove('bg-white', 'dark:bg-[#252525]', 'text-primary', 'dark:text-gold');
+                        selectedKeywords.push(value);
+                    }
+                });
+            });
+
+            // --- STREAMING_CHUNK: 제너레이터 핵심 폼 처리 로직 ---
+            // --- 7. 타이틀 메이커 제어 및 연동 ---
+            const coreInput = document.getElementById('user-core-idea');
+            const submitBtn = document.getElementById('ai-submit-btn');
+            const loadingArea = document.getElementById('ai-loading');
+            const errorArea = document.getElementById('ai-error');
+            const resultPanel = document.getElementById('ai-result');
+
+            const resTitle = document.getElementById('res-title');
+            const resCopy = document.getElementById('res-copy');
+            const resSynopsis = document.getElementById('res-synopsis');
+            const resAnalysis = document.getElementById('res-analysis');
+
+            submitBtn.addEventListener('click', async () => {
+                const ideaText = coreInput.value.trim();
+                
+                if (!ideaText) {
+                    showToast(i18n[currentLang].error_no_idea);
+                    return;
+                }
+                if (selectedKeywords.length === 0) {
+                    showToast(i18n[currentLang].error_no_kw);
+                    return;
+                }
+
+                errorArea.style.display = 'none';
+                errorArea.classList.add('hidden');
+                resultPanel.classList.remove('active');
+                resultPanel.classList.add('hidden');
+                
+                loadingArea.classList.remove('hidden');
+                loadingArea.classList.add('active', 'flex');
+                submitBtn.disabled = true;
+
+                const selectedKeywordsString = selectedKeywords.join(', ');
+
+                const systemPrompt = i18n[currentLang].system_instruction;
+                const userPrompt = `- Core Idea/Concept: "${ideaText}"
+- Selected Keywords: "${selectedKeywordsString}"
+- Output Language: ${i18n[currentLang].prompt_lang}
+
+Based on these elements, generate a fascinating and trendy fictional webnovel title, catchphrase, synopsis, and trend analysis in ${i18n[currentLang].prompt_lang}.`;
+
+                try {
+                    const data = await callGeminiAPI(userPrompt, systemPrompt);
+                    
+                    if (data && data.candidates && data.candidates[0]?.content?.parts?.[0]?.text) {
+                        const jsonText = data.candidates[0].content.parts[0].text;
+                        const cleanJson = JSON.parse(jsonText);
+
+                        resTitle.textContent = cleanJson.title || "Untitled";
+                        resCopy.textContent = cleanJson.catchphrase ? `"${cleanJson.catchphrase}"` : "";
+                        resSynopsis.textContent = cleanJson.synopsis || "";
+                        resAnalysis.textContent = cleanJson.analysis || "";
+
+                        resultPanel.classList.remove('hidden');
+                        resultPanel.classList.add('active');
+                        
+                        setTimeout(() => {
+                            resultPanel.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                        }, 120);
+
+                    } else {
+                        throw new Error("Unable to parse data from AI. Please try again.");
+                    }
+                } catch (err) {
+                    showError(err.message || "An error occurred while calling the AI service.");
+                } finally {
+                    loadingArea.classList.add('hidden');
+                    loadingArea.classList.remove('active', 'flex');
+                    submitBtn.disabled = false;
+                }
+            });
+
+            function showError(msg) {
+                errorArea.textContent = msg;
+                errorArea.classList.remove('hidden');
+                errorArea.style.display = 'block';
+                loadingArea.classList.add('hidden');
+                loadingArea.classList.remove('active', 'flex');
+                submitBtn.disabled = false;
+            }
+
+            // --- STREAMING_CHUNK: 원격 제미니 API 안전 통신부 ---
+            // Exponential Backoff를 통한 안전한 API 전송 (index.html, webnovel_intro_guide.html 규격과 100% 대응)
+            async function callGeminiAPI(prompt, systemPrompt) {
+                const apiKey = ""; 
+                const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=${apiKey}`;
+                
+                const payload = {
+                    contents: [{ parts: [{ text: prompt }] }],
+                    systemInstruction: { parts: [{ text: systemPrompt }] },
+                    generationConfig: {
+                        responseMimeType: "application/json",
+                        responseSchema: {
+                            type: "OBJECT",
+                            properties: {
+                                title: { type: "STRING", description: "소재와 키워드를 창의적으로 혼합한 완성도 높은 가상의 제목" },
+                                catchphrase: { type: "STRING", description: "웹소설 배너 광고에 적합한 강력하고 자극적인 한 줄 카피라이팅" },
+                                synopsis: { type: "STRING", description: "주인공의 상태창 각성, 회빙환을 영리하게 엮어낸 긴장감 넘치는 3~4줄 분량의 줄거리 전개 시놉시스" },
+                                analysis: { type: "STRING", description: "선택한 키워드들이 사용자 소재와 결합해 어떤 대리만족과 극적 카타르시스를 만들어내는지 전문적인 기획 코멘트" }
+                            },
+                            required: ["title", "catchphrase", "synopsis", "analysis"]
+                        }
+                    }
+                };
+
+                let delay = 1000;
+                for (let i = 0; i < 5; i++) {
+                    try {
+                        const response = await fetch(url, {
+                            method: "POST",
+                            headers: { "Content-Type": "application/json" },
+                            body: JSON.stringify(payload)
+                        });
+                        if (response.ok) {
+                            return await response.json();
+                        }
+                    } catch (e) {
+                        // 백오프 재시도
+                    }
+                    await new Promise(resolve => setTimeout(resolve, delay));
+                    delay *= 2;
+                }
+                throw new Error("서버 대역폭이 혼잡합니다. 잠시 후 생성 버튼을 다시 클릭해 주세요.");
+            }
+
+            // --- STREAMING_CHUNK: 잉크 트레일 엔진 초기화 ---
+            // --- 8. 브라우저 기본 포인터 뒤를 우아하게 따르는 실시간 잉크 파티클 엔진 ---
+            const canvas = document.getElementById('ink-canvas');
+            const ctx = canvas.getContext('2d');
+
+            let particles = [];
+            let lastMouseX = 0;
+            let lastMouseY = 0;
+
+            function resizeCanvas() {
+                canvas.width = window.innerWidth;
+                canvas.height = window.innerHeight;
+            }
+            window.addEventListener('resize', resizeCanvas);
+            resizeCanvas();
+
+            window.addEventListener('mousemove', (e) => {
+                const mouseX = e.clientX;
+                const mouseY = e.clientY;
+
+                const dist = Math.hypot(mouseX - lastMouseX, mouseY - lastMouseY);
+                
+                if (dist > 3) {
+                    const isDark = document.documentElement.classList.contains('dark');
+                    const inkColor = isDark ? 'rgba(197, 163, 104, 0.45)' : 'rgba(0, 44, 95, 0.35)';
+                    
+                    particles.push({
+                        x: mouseX,
+                        y: mouseY,
+                        size: Math.random() * 4 + 2,
+                        vx: (Math.random() - 0.5) * 0.6,
+                        vy: (Math.random() - 0.5) * 0.6 + 0.3, // 약한 중력 하강
+                        alpha: 1,
+                        color: inkColor,
+                        decay: Math.random() * 0.015 + 0.01
+                    });
+                }
+
+                lastMouseX = mouseX;
+                lastMouseY = mouseY;
+            });
+
+            function animateInk() {
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+                for (let i = particles.length - 1; i >= 0; i--) {
+                    const p = particles[i];
+                    p.x += p.vx;
+                    p.y += p.vy;
+                    p.alpha -= p.decay;
+                    p.size += 0.04;
+
+                    if (p.alpha <= 0) {
+                        particles.splice(i, 1);
+                        continue;
+                    }
+
+                    ctx.save();
+                    ctx.globalAlpha = p.alpha;
+                    ctx.fillStyle = p.color;
+                    ctx.beginPath();
+                    ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+                    ctx.fill();
+                    ctx.restore();
+                }
+
+                requestAnimationFrame(animateInk);
+            }
+            requestAnimationFrame(animateInk);
+
+        });
+    </script>
+</body>
+</html>
