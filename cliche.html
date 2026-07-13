@@ -100,15 +100,16 @@
         <div class="absolute inset-x-0 top-0 h-[6px] md:h-[12px] bg-primary dark:bg-[#1a1a1a]"></div>
         
         <div class="w-full max-w-[1100px] mx-auto px-3 sm:px-[30px] mt-[6px] md:mt-[12px] flex justify-between items-center">
-            <a href="intro.html" class="text-sm sm:text-base md:text-xl font-bold text-primary dark:text-gold flex items-center gap-1 sm:gap-2 tracking-tight shrink-0">
+            <!-- index.html로 전면 리디렉션 연결 -->
+            <a href="index.html" class="text-sm sm:text-base md:text-xl font-bold text-primary dark:text-gold flex items-center gap-1 sm:gap-2 tracking-tight shrink-0">
                 📚 <span data-i18n="nav_logo">입문 도서관</span>
             </a>
             
             <div class="flex items-center gap-2 sm:gap-6">
-                <!-- 가상 페이지 라우팅 전용 탭 메뉴 -->
+                <!-- 가상 페이지 라우팅 전용 탭 메뉴 (index.html 타겟팅) -->
                 <ul class="flex gap-1.5 sm:gap-4 md:gap-6 list-none items-center">
                     <li>
-                        <a href="intro.html" data-page="intro" class="nav-link relative py-1 px-1 sm:px-1.5 text-[0.75rem] sm:text-xs md:text-[0.95rem] font-medium transition-all duration-300 text-primary dark:text-[#bbb] hover:text-dark dark:hover:text-gold whitespace-nowrap">
+                        <a href="index.html" data-page="intro" class="nav-link relative py-1 px-1 sm:px-1.5 text-[0.75rem] sm:text-xs md:text-[0.95rem] font-medium transition-all duration-300 text-primary dark:text-[#bbb] hover:text-dark dark:hover:text-gold whitespace-nowrap">
                             <span data-i18n="nav_home_short" class="md:hidden">홈</span>
                             <span data-i18n="nav_home" class="hidden md:inline">홈 & 입문이유</span>
                         </a>
@@ -143,7 +144,7 @@
         </div>
     </nav>
 
-    <!-- ================= STREAMING_CHUNK: 클리셰 해부 그리드 작성 ================= -->
+    <!-- ================= CONTENT VIEW: 클리셰 & AI기획 ================= -->
     <div id="view-tropes" class="page-view">
         <section class="py-16 md:py-[100px] bg-cream dark:bg-[#121212] transition-colors duration-300">
             <div class="w-full max-w-[1100px] mx-auto px-4 sm:px-[30px]">
@@ -207,7 +208,6 @@
             </div>
         </section>
 
-        <!-- ================= STREAMING_CHUNK: AI 타이틀 제너레이터 작성 ================= -->
         <section class="bg-white dark:bg-[#151515] py-16 md:py-[100px] border-t border-primary dark:border-gold/20 transition-colors duration-300" id="ai-generator">
             <div class="w-full max-w-[1100px] mx-auto px-4 sm:px-[30px]">
                 <div class="text-center mb-12 md:mb-[70px]">
@@ -317,7 +317,7 @@
     </footer>
 
     <script>
-        // 한국어 / 영어 글로벌 로컬라이징 사전 (3페이지 MPA에 완벽 동기화 연동)
+        // 한국어 / 영어 글로벌 로컬라이징 사전 (index.html 변경 링크 반영)
         const i18n = {
             ko: {
                 nav_logo: "입문 도서관",
@@ -456,7 +456,6 @@
                 }
             });
 
-            // --- STREAMING_CHUNK: 토스트 팝업 모듈 구현 ---
             // --- 3. 커스텀 북마크 디자인 토스트 시스템 ---
             function showToast(message) {
                 const container = document.getElementById('toast-container');
@@ -508,7 +507,7 @@
                 applyTranslations();
             });
 
-            // --- STREAMING_CHUNK: 키워드 풀 이벤트 연결 및 한도 제한 ---
+            // --- STREAMING_CHUNK: 키워드 다중선택 제어 스크립트 작성... ---
             // --- 6. 키워드 2개 제한 선택 제어 ---
             const keywordPool = document.getElementById('keyword-pool');
             const keywordBtns = keywordPool.querySelectorAll('.keyword-btn');
@@ -539,7 +538,7 @@
                 });
             });
 
-            // --- STREAMING_CHUNK: 제너레이터 핵심 폼 처리 로직 ---
+            // --- STREAMING_CHUNK: 타이틀 메이커 제어 및 API 통신... ---
             // --- 7. 타이틀 메이커 제어 및 연동 ---
             const coreInput = document.getElementById('user-core-idea');
             const submitBtn = document.getElementById('ai-submit-btn');
@@ -622,7 +621,6 @@ Based on these elements, generate a fascinating and trendy fictional webnovel ti
                 submitBtn.disabled = false;
             }
 
-            // --- STREAMING_CHUNK: 원격 제미니 API 안전 통신부 ---
             // Exponential Backoff를 통한 안전한 API 전송 (index.html, webnovel_intro_guide.html 규격과 100% 대응)
             async function callGeminiAPI(prompt, systemPrompt) {
                 const apiKey = ""; 
@@ -666,7 +664,7 @@ Based on these elements, generate a fascinating and trendy fictional webnovel ti
                 throw new Error("서버 대역폭이 혼잡합니다. 잠시 후 생성 버튼을 다시 클릭해 주세요.");
             }
 
-            // --- STREAMING_CHUNK: 잉크 트레일 엔진 초기화 ---
+            // --- STREAMING_CHUNK: 마우스 포인터 잉크 궤적 드로잉 루프... ---
             // --- 8. 브라우저 기본 포인터 뒤를 우아하게 따르는 실시간 잉크 파티클 엔진 ---
             const canvas = document.getElementById('ink-canvas');
             const ctx = canvas.getContext('2d');

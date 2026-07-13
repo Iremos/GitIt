@@ -10,7 +10,7 @@
     <!-- FontAwesome 아이콘 CDN -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     
-    <!-- Tailwind CSS CDN 연동 및 커스텀 테마 구성 (intro.html과 100% 동일) -->
+    <!-- Tailwind CSS CDN 연동 및 커스텀 테마 구성 (index.html과 100% 동일) -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
         tailwind.config = {
@@ -76,15 +76,15 @@
         <div class="absolute inset-x-0 top-0 h-[6px] md:h-[12px] bg-primary dark:bg-[#1a1a1a]"></div>
         
         <div class="w-full max-w-[1100px] mx-auto px-3 sm:px-[30px] mt-[6px] md:mt-[12px] flex justify-between items-center">
-            <a href="intro.html" class="text-sm sm:text-base md:text-xl font-bold text-primary dark:text-gold flex items-center gap-1 sm:gap-2 tracking-tight shrink-0">
+            <a href="index.html" class="text-sm sm:text-base md:text-xl font-bold text-primary dark:text-gold flex items-center gap-1 sm:gap-2 tracking-tight shrink-0">
                 📚 <span data-i18n="nav_logo">입문 도서관</span>
             </a>
             
             <div class="flex items-center gap-2 sm:gap-6">
-                <!-- 가상 페이지 라우팅 전용 탭 메뉴 -->
+                <!-- 가상 페이지 라우팅 전용 탭 메뉴 (index.html 타겟팅) -->
                 <ul class="flex gap-1.5 sm:gap-4 md:gap-6 list-none items-center">
                     <li>
-                        <a href="intro.html" data-page="intro" class="nav-link relative py-1 px-1 sm:px-1.5 text-[0.75rem] sm:text-xs md:text-[0.95rem] font-medium transition-all duration-300 text-primary dark:text-[#bbb] hover:text-dark dark:hover:text-gold whitespace-nowrap">
+                        <a href="index.html" data-page="intro" class="nav-link relative py-1 px-1 sm:px-1.5 text-[0.75rem] sm:text-xs md:text-[0.95rem] font-medium transition-all duration-300 text-primary dark:text-[#bbb] hover:text-dark dark:hover:text-gold whitespace-nowrap">
                             <span data-i18n="nav_home_short" class="md:hidden">홈</span>
                             <span data-i18n="nav_home" class="hidden md:inline">홈 & 입문이유</span>
                         </a>
@@ -322,7 +322,7 @@
     </footer>
 
     <script>
-        // 한국어 / 영어 글로벌 로컬라이징 사전
+        // 한국어 / 영어 글로벌 로컬라이징 사전 (index.html 변경 링크 반영)
         const i18n = {
             ko: {
                 nav_logo: "입문 도서관",
@@ -462,7 +462,7 @@
 
             applyTranslations();
 
-            // --- 2. 동적 네비게이션 액티브 하이라이터 (MPA용 자동 검출기) ---
+            // --- 2. 동적 네비게이션 활성 상태 표시기 ---
             const pageId = document.body.getAttribute('data-page'); 
             document.querySelectorAll('.nav-link').forEach(link => {
                 const linkPage = link.getAttribute('data-page');
@@ -547,6 +547,7 @@
                 });
             });
 
+            // --- STREAMING_CHUNK: 마우스 궤적 잉크 파티클 엔진 초기화 ---
             // --- 7. 브라우저 기본 포인터 뒤를 우아하게 따르는 실시간 잉크 파티클 엔진 ---
             const canvas = document.getElementById('ink-canvas');
             const ctx = canvas.getContext('2d');
